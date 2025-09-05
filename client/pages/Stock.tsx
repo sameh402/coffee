@@ -127,54 +127,62 @@ export default function Stock() {
     const noise = 0.8 + prng(seed + p.id.length * 7) * 0.6; // 0.8..1.4
     return Math.max(0, Math.round(base * dowFactor * noise));
   }
-  const readinessCards = products.map((p) => ({
+  const readinessRows = products.map((p) => ({
     id: p.id,
     name: p.name,
     category: p.category,
     required: predictedTomorrowUnits(p),
+    coverage: coverageForProduct(p, raws),
   }));
 
   return (
     <DashboardLayout title="Stock Management">
-      {/* Tomorrow readiness cards (Required only) */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {readinessCards.map((it) => (
-          <Card key={it.id}>
-            <CardHeader>
-              <CardTitle className="text-base">{it.name}</CardTitle>
-              <CardDescription>Required for tomorrow</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-end justify-between">
-              <div className="text-2xl font-semibold text-primary">{it.required}</div>
-              <Badge variant="secondary">{it.category}</Badge>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Actions */}
+      <div className="mb-4 flex justify-end">
+        <AddProductButton />
       </div>
 
-      {/* Product cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {products.map((p) => {
-          const cover = coverageForProduct(p, raws);
-          return (
-            <Card key={p.id}>
-              <CardHeader>
-                <CardTitle className="text-base">{p.name} Coverage</CardTitle>
-                <CardDescription>{p.category}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex items-end justify-between">
-                <div className="text-2xl font-semibold">{cover}</div>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setSelected(p.id)}
-                >
-                  Details
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* Readiness & Coverage table */}
+      <div className="mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Tomorrow Required & Coverage</CardTitle>
+            <CardDescription>Plan production to avoid stockouts.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Required Tomorrow</TableHead>
+                  <TableHead>Coverage</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {readinessRows.map((r) => {
+                  const inStock = r.coverage >= r.required;
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium">{r.name}</TableCell>
+                      <TableCell>{r.category}</TableCell>
+                      <TableCell>{r.required}</TableCell>
+                      <TableCell>{r.coverage}</TableCell>
+                      <TableCell>
+                        {inStock ? (
+                          <Badge className="bg-emerald-600">Ready</Badge>
+                        ) : (
+                          <Badge className="bg-amber-600">Short</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Products table */}
