@@ -106,6 +106,8 @@
     /* Chart palette (dark) */
     --chart-primary: var(--primary);
     --chart-secondary: 220 75% 60%;
+    /* Coffee tone */
+    --coffee: 25 35% 65%;
   }
 }
 
