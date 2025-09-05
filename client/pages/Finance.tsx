@@ -38,13 +38,11 @@ import {
 import {
   addDays,
   eachDayOfInterval,
-  eachHourOfInterval,
   eachMonthOfInterval,
   endOfMonth,
   endOfYear,
   format,
   getDate,
-  getHours,
   getMonth,
   getYear,
   startOfMonth,
@@ -282,16 +280,15 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
       });
       return arr;
     }
-    // daily -> 24 hours
-    const hours = eachHourOfInterval({
-      start: range.start,
-      end: addDays(range.start, 1),
-    }).slice(0, 24);
-    const arr = hours.map((h) => ({ label: format(h, "HH"), total: 0 }));
+    // daily -> 7 days of the selected week labeled 1..7
+    const days = eachDayOfInterval({ start: range.start, end: range.end });
+    const arr = days.map((_d, i) => ({ label: String(i + 1), total: 0 }));
     rangedEntries.forEach((en) => {
       const d = new Date(en.date);
-      const idx = clamp(getHours(d), 0, 23);
-      arr[idx].total += en.amount;
+      const idx = Math.floor(
+        (d.getTime() - range.start.getTime()) / 86400000,
+      );
+      if (idx >= 0 && idx < arr.length) arr[idx].total += en.amount;
     });
     return arr;
   }, [scale, entries, rangedEntries, range, year]);
