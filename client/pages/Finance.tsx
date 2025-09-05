@@ -178,7 +178,7 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
       weekStartsOn: 1,
     });
     const diffDays = Math.floor((d.getTime() - base.getTime()) / 86400000);
-    const wk = Math.max(1, Math.min(5, Math.floor(diffDays / 7) + 1));
+    const wk = Math.max(1, Math.min(4, Math.floor(diffDays / 7) + 1));
     setYear(yy);
     setQuarter(q);
     setMonth(mm);
