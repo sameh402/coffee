@@ -132,9 +132,25 @@ export default function DashboardLayout({
               <div className="hidden md:flex items-center gap-2 ml-auto">
                 <Input placeholder="Search…" className="w-64" />
                 <Button variant="secondary" onClick={() => window.print()}>Export PDF</Button>
-                <Avatar className="size-8">
-                  <AvatarFallback>SE</AvatarFallback>
-                </Avatar>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Avatar className="size-8 cursor-pointer">
+                      <AvatarFallback>SE</AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => {
+                        try { localStorage.removeItem("auth"); } catch {}
+                        window.location.href = "/login";
+                      }}
+                    >
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
