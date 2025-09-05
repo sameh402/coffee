@@ -122,8 +122,51 @@ export default function Stock() {
       .filter((r) => r.needed > 0);
   }, [selectedProduct]);
 
+  // Estimate required units for tomorrow and compare against coverage
+  function prng(seed: number) {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+  function predictedTomorrowUnits(p: Product) {
+    const today = new Date();
+    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const base = p.category === "Coffee" ? 120 : p.category === "Cold" ? 80 : 60;
+    const dow = today.getDay();
+    const dowFactor = [0.9, 0.95, 1.0, 1.05, 1.1, 1.25, 1.3][dow];
+    const noise = 0.8 + prng(seed + p.id.length * 7) * 0.6; // 0.8..1.4
+    return Math.max(0, Math.round(base * dowFactor * noise));
+  }
+  const readinessData = products.map((p) => ({
+    product: p.name,
+    Have: coverageForProduct(p, raws),
+    Required: predictedTomorrowUnits(p),
+  }));
+
   return (
     <DashboardLayout title="Stock Management">
+      {/* Tomorrow readiness chart */}
+      <div className="mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Tomorrow Readiness</CardTitle>
+            <CardDescription>Coverage vs required units per product</CardDescription>
+          </CardHeader>
+          <CardContent className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={readinessData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                <XAxis dataKey="product" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <ReTooltip />
+                <Legend />
+                <Bar dataKey="Have" fill="hsl(var(--secondary))" radius={[4,4,0,0]} />
+                <Bar dataKey="Required" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Product cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((p) => {
