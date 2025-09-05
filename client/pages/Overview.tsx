@@ -220,7 +220,8 @@ export default function Overview() {
 
     // hourly with interval
     const y = typeof year === "number" ? year : getYear(now);
-    const date = new Date(y, effectiveMonth - 1, 1 + (week - 1) * 7);
+    const wk = week === 0 ? 1 : week;
+    const date = new Date(y, effectiveMonth - 1, 1 + (wk - 1) * 7);
     const hours = eachHourOfInterval({
       start: date,
       end: addDays(date, 1),
