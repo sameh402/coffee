@@ -9,6 +9,7 @@ export default function Login() {
   const [params] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
   const to = params.get("to") ?? "/overview";
 
   useEffect(() => {
