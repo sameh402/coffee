@@ -131,6 +131,83 @@ export default function DashboardLayout({
               </h1>
               <div className="hidden md:flex items-center gap-2 ml-auto">
                 <Input placeholder="Search…" className="w-64" />
+                <Dialog open={addOpen} onOpenChange={setAddOpen}>
+                  <DialogTrigger asChild>
+                    <Button>Add Product</Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Add Product</DialogTitle>
+                      <DialogDescription>Provide details and pricing. Images are optional (max 3).</DialogDescription>
+                    </DialogHeader>
+                    <form className="grid gap-4" onSubmit={onSubmitProduct}>
+                      <div className="grid gap-2">
+                        <Label>Images</Label>
+                        <Input type="file" accept="image/*" multiple onChange={onPickImages} />
+                        {images.length > 0 && (
+                          <div className="flex gap-2 mt-1">
+                            {images.map((src, i) => (
+                              <img key={i} src={src} alt="preview" className="h-16 w-16 object-cover rounded-md border" />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Product Name</Label>
+                        <Input value={pName} onChange={(e)=>setPName(e.target.value)} required />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Description</Label>
+                        <Textarea value={pDesc} onChange={(e)=>setPDesc(e.target.value)} />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Category</Label>
+                        <select className="border rounded-md h-9 px-3 text-sm" value={pCat} onChange={(e)=>onChangeCategory(e.target.value as any)}>
+                          <option value="coffee bean">Coffee Bean</option>
+                          <option value="coffee">Coffee</option>
+                          <option value="drink">Drink</option>
+                        </select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Base Price</Label>
+                        <Input type="number" min="0" step="0.01" value={basePrice} onChange={(e)=>setBasePrice(e.target.value)} />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Price Categories</Label>
+                        <div className="rounded-md border overflow-hidden">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-secondary/50">
+                                <th className="text-left p-2">Variant</th>
+                                <th className="text-left p-2">Price</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {variantLabels.map((vl) => (
+                                <tr key={vl} className="border-t">
+                                  <td className="p-2">{vl}</td>
+                                  <td className="p-2">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      value={variantPrices[vl] ?? ""}
+                                      onChange={(e)=>setVariantPrices((prev)=>({ ...prev, [vl]: e.target.value }))}
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" variant="secondary" onClick={()=>setAddOpen(false)}>Cancel</Button>
+                        <Button type="submit">Save Product</Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
                 <Button variant="secondary" onClick={() => window.print()}>Export PDF</Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
