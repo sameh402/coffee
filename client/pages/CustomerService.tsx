@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -105,7 +106,7 @@ export default function CustomerService() {
     (Math.floor(getMonth(now) / 3) + 1) as 1 | 2 | 3 | 4,
   );
   const [month, setMonth] = useState<number>(getMonth(now) + 1); // 1..12
-  const [week, setWeek] = useState<number>(1);
+  const [week, setWeek] = useState<number>(1); // 0 = All weeks
   const [genderFilter, setGenderFilter] = useState<"All" | "Male" | "Female">(
     "All",
   );
@@ -156,6 +157,11 @@ export default function CustomerService() {
       return { start: s, end: endOfMonth(s), label: format(s, "MMM yyyy") };
     }
     if (scale === "weekly") {
+      if (week === 0) {
+        const s = startOfMonth(new Date(year, effectiveMonth - 1, 1));
+        const e = endOfMonth(s);
+        return { start: s, end: e, label: `${format(s, "MMM d")} – ${format(e, "MMM d, yyyy")}` };
+      }
       const base = startOfWeek(
         startOfMonth(new Date(year, effectiveMonth - 1, 1)),
         { weekStartsOn: 1 },
@@ -168,6 +174,10 @@ export default function CustomerService() {
       };
     }
     // daily
+    if (week === 0) {
+      const s = startOfMonth(new Date(year, effectiveMonth - 1, 1));
+      return { start: s, end: s, label: format(s, "MMM yyyy") };
+    }
     const base = startOfWeek(
       startOfMonth(new Date(year, effectiveMonth - 1, 1)),
       { weekStartsOn: 1 },
@@ -541,6 +551,8 @@ export default function CustomerService() {
     return { x, y };
   }
 
+  const [selectedFeedback, setSelectedFeedback] = useState<any | null>(null);
+
   return (
     <DashboardLayout title="Customer Satisfaction Dashboard">
       {/* Global filters */}
@@ -607,7 +619,8 @@ export default function CustomerService() {
               <SelectValue placeholder="Week" />
             </SelectTrigger>
             <SelectContent>
-              {[1, 2, 3, 4, 5].map((w) => (
+              <SelectItem value="0">All</SelectItem>
+              {[1, 2, 3, 4].map((w) => (
                 <SelectItem key={w} value={String(w)}>{`Wk ${w}`}</SelectItem>
               ))}
             </SelectContent>
@@ -756,10 +769,9 @@ export default function CustomerService() {
                 />
                 <YAxis stroke="hsl(var(--muted-foreground))" />
                 <ReTooltip />
-                <Legend />
                 <Bar
                   dataKey="Score"
-                  fill="hsl(var(--accent))"
+                  fill="hsl(var(--primary))"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
@@ -831,81 +843,23 @@ export default function CustomerService() {
         </Card>
       </div>
 
-      {/* Demand map */}
+      {/* Demand by location (bar chart) */}
       <div className="grid gap-4 mt-4">
         <Card>
           <CardHeader>
             <CardTitle>Demand by Location</CardTitle>
-            <CardDescription>
-              Higher bubbles indicate more demand
-            </CardDescription>
+            <CardDescription>Relative demand per city</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="relative w-full" style={{ height: 260 }}>
-              <svg
-                viewBox="0 0 800 400"
-                className="w-full h-full rounded-md border"
-              >
-                <defs>
-                  <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
-                    <stop
-                      offset="0%"
-                      stopColor="hsl(var(--muted))"
-                      stopOpacity="0.25"
-                    />
-                    <stop offset="100%" stopColor="hsl(var(--background))" />
-                  </linearGradient>
-                </defs>
-                <rect x="0" y="0" width="800" height="400" fill="url(#bg)" />
-                {Array.from({ length: 12 }, (_, i) => i).map((i) => (
-                  <line
-                    key={`v${i}`}
-                    x1={(i + 1) * 60}
-                    y1={0}
-                    x2={(i + 1) * 60}
-                    y2={400}
-                    stroke="hsl(var(--muted))"
-                    strokeDasharray="4 4"
-                  />
-                ))}
-                {Array.from({ length: 7 }, (_, i) => i).map((i) => (
-                  <line
-                    key={`h${i}`}
-                    x1={0}
-                    y1={(i + 1) * 50}
-                    x2={800}
-                    y2={(i + 1) * 50}
-                    stroke="hsl(var(--muted))"
-                    strokeDasharray="4 4"
-                  />
-                ))}
-                {demandPoints.map((p) => {
-                  const { x, y } = project(p.lat, p.lon, 800, 400);
-                  const r = 6 + (p.demand / 100) * 18;
-                  return (
-                    <g key={p.city}>
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r={r}
-                        fill="hsl(var(--primary))"
-                        fillOpacity="0.35"
-                        stroke="hsl(var(--primary))"
-                      />
-                      <text
-                        x={x + r + 4}
-                        y={y}
-                        alignmentBaseline="middle"
-                        fontSize="12"
-                        fill="hsl(var(--foreground))"
-                      >
-                        {p.city} ({p.demand})
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-            </div>
+          <CardContent className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={demandPoints}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                <XAxis dataKey="city" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <ReTooltip />
+                <Bar dataKey="demand" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
@@ -1000,6 +954,31 @@ export default function CustomerService() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!selectedFeedback} onOpenChange={() => setSelectedFeedback(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Feedback Details</DialogTitle>
+            <DialogDescription>Full context for the selected row</DialogDescription>
+          </DialogHeader>
+          {selectedFeedback && (
+            <div className="space-y-2 text-sm">
+              <div><span className="text-muted-foreground">Name:</span> {selectedFeedback.name}</div>
+              <div><span className="text-muted-foreground">Phone:</span> {selectedFeedback.phone}</div>
+              <div><span className="text-muted-foreground">Type:</span> {selectedFeedback.type}</div>
+              <div><span className="text-muted-foreground">Created:</span> {format(new Date(selectedFeedback.createdAt), "PPpp")}</div>
+              <div>
+                <div className="text-muted-foreground">Short Description</div>
+                <div>{String(selectedFeedback.description).slice(0, 80)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Long Description</div>
+                <div>{selectedFeedback.description}</div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
