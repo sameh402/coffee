@@ -19,6 +19,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useMemo, useState } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as ReTooltip,
+  Legend,
+} from "recharts";
 
 // Demo stock model
 type Raw = { id: string; name: string; unit: string; qty: number };
