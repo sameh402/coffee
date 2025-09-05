@@ -299,7 +299,18 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
       });
       return arr;
     }
-    // daily -> 7 days of the selected week labeled 1..7
+    // daily -> if week=0 show full month days, else 7 days (1..7) of selected week
+    if (week === 0) {
+      const s = startOfMonth(new Date(year, effectiveMonth - 1, 1));
+      const days = eachDayOfInterval({ start: s, end: endOfMonth(s) });
+      const arr = days.map((d) => ({ label: format(d, "d"), total: 0 }));
+      rangedEntries.forEach((en) => {
+        const d = new Date(en.date);
+        const idx = getDate(d) - 1;
+        if (idx >= 0 && idx < arr.length) arr[idx].total += en.amount;
+      });
+      return arr;
+    }
     const days = eachDayOfInterval({ start: range.start, end: range.end });
     const arr = days.map((_d, i) => ({ label: String(i + 1), total: 0 }));
     rangedEntries.forEach((en) => {
