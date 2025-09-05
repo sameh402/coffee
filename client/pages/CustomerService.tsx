@@ -808,7 +808,7 @@ export default function CustomerService() {
                 {genderFilter !== "Male" && (
                   <Bar
                     dataKey="Female"
-                    fill="hsl(var(--secondary))"
+                    fill="hsl(var(--chart-secondary))"
                     radius={[4, 4, 0, 0]}
                   />
                 )}
@@ -837,7 +837,7 @@ export default function CustomerService() {
                   <Bar dataKey="Male" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
                 )}
                 {genderFilter !== "Male" && (
-                  <Bar dataKey="Female" fill="hsl(var(--secondary))" radius={[4,4,0,0]} />
+                  <Bar dataKey="Female" fill="hsl(var(--chart-secondary))" radius={[4,4,0,0]} />
                 )}
               </BarChart>
             </ResponsiveContainer>
