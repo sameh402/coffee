@@ -921,7 +921,7 @@ export default function CustomerService() {
               </TableHeader>
               <TableBody>
                 {filteredFeedbacks.map((f) => (
-                  <TableRow key={f.id}>
+                  <TableRow key={f.id} className="cursor-pointer" onClick={() => setSelectedFeedback(f)}>
                     <TableCell className="font-medium">{f.name}</TableCell>
                     <TableCell>{f.phone}</TableCell>
                     <TableCell>{f.type}</TableCell>
