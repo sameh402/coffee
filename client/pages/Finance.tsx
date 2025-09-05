@@ -38,13 +38,11 @@ import {
 import {
   addDays,
   eachDayOfInterval,
-  eachHourOfInterval,
   eachMonthOfInterval,
   endOfMonth,
   endOfYear,
   format,
   getDate,
-  getHours,
   getMonth,
   getYear,
   startOfMonth,
@@ -180,7 +178,7 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
       weekStartsOn: 1,
     });
     const diffDays = Math.floor((d.getTime() - base.getTime()) / 86400000);
-    const wk = Math.max(1, Math.min(5, Math.floor(diffDays / 7) + 1));
+    const wk = Math.max(1, Math.min(4, Math.floor(diffDays / 7) + 1));
     setYear(yy);
     setQuarter(q);
     setMonth(mm);
@@ -210,6 +208,10 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
       return { start: s, end: endOfMonth(s) };
     }
     if (scale === "weekly" || scale === "daily") {
+      if (week === 0) {
+        const s = startOfMonth(new Date(year, effectiveMonth - 1, 1));
+        return { start: s, end: endOfMonth(s) };
+      }
       const base = startOfWeek(
         startOfMonth(new Date(year, effectiveMonth - 1, 1)),
         { weekStartsOn: 1 },
@@ -271,6 +273,21 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
       return arr;
     }
     if (scale === "weekly") {
+      if (week === 0) {
+        const base = startOfWeek(
+          startOfMonth(new Date(year, effectiveMonth - 1, 1)),
+          { weekStartsOn: 1 },
+        );
+        const arr = [1, 2, 3, 4].map((w) => ({ label: `Wk ${w}`, total: 0 }));
+        rangedEntries.forEach((en) => {
+          const d = new Date(en.date);
+          const diffDays = Math.floor((d.getTime() - base.getTime()) / 86400000);
+          const wk = Math.floor(diffDays / 7) + 1;
+          const idx = Math.min(Math.max(wk, 1), 4) - 1;
+          arr[idx].total += en.amount;
+        });
+        return arr;
+      }
       const days = eachDayOfInterval({ start: range.start, end: range.end });
       const arr = days.map((d) => ({ label: format(d, "EEE"), total: 0 }));
       rangedEntries.forEach((en) => {
@@ -282,16 +299,26 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
       });
       return arr;
     }
-    // daily -> 24 hours
-    const hours = eachHourOfInterval({
-      start: range.start,
-      end: addDays(range.start, 1),
-    }).slice(0, 24);
-    const arr = hours.map((h) => ({ label: format(h, "HH"), total: 0 }));
+    // daily -> if week=0 show full month days, else 7 days (1..7) of selected week
+    if (week === 0) {
+      const s = startOfMonth(new Date(year, effectiveMonth - 1, 1));
+      const days = eachDayOfInterval({ start: s, end: endOfMonth(s) });
+      const arr = days.map((d) => ({ label: format(d, "d"), total: 0 }));
+      rangedEntries.forEach((en) => {
+        const d = new Date(en.date);
+        const idx = getDate(d) - 1;
+        if (idx >= 0 && idx < arr.length) arr[idx].total += en.amount;
+      });
+      return arr;
+    }
+    const days = eachDayOfInterval({ start: range.start, end: range.end });
+    const arr = days.map((_d, i) => ({ label: String(i + 1), total: 0 }));
     rangedEntries.forEach((en) => {
       const d = new Date(en.date);
-      const idx = clamp(getHours(d), 0, 23);
-      arr[idx].total += en.amount;
+      const idx = Math.floor(
+        (d.getTime() - range.start.getTime()) / 86400000,
+      );
+      if (idx >= 0 && idx < arr.length) arr[idx].total += en.amount;
     });
     return arr;
   }, [scale, entries, rangedEntries, range, year]);
@@ -375,7 +402,8 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
                 <SelectValue placeholder="Week" />
               </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4, 5].map((w) => (
+                <SelectItem value="0">All</SelectItem>
+                {[1, 2, 3, 4].map((w) => (
                   <SelectItem key={w} value={String(w)}>{`Wk ${w}`}</SelectItem>
                 ))}
               </SelectContent>
@@ -481,8 +509,261 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
 }
 
 export default function Finance() {
+  // Invoices mock + filters
+  type InvoiceItem = { name: string; price: number };
+  type Invoice = {
+    id: string;
+    date: string; // yyyy-MM-dd
+    time: string; // HH:mm
+    customerName: string;
+    phone: string;
+    gender: "Male" | "Female";
+    items: InvoiceItem[];
+    subtotal: number;
+    paid: number;
+  };
+
+  const now = new Date();
+  const [scaleI, setScaleI] = useState<Scale>("monthly");
+  const [yearI, setYearI] = useState<number>(getYear(now));
+  const [quarterI, setQuarterI] = useState<1 | 2 | 3 | 4>(
+    (Math.floor(getMonth(now) / 3) + 1) as 1 | 2 | 3 | 4,
+  );
+  const [monthI, setMonthI] = useState<number>(getMonth(now) + 1);
+  const [weekI, setWeekI] = useState<number>(1); // 0 = All
+
+  const yearsI = useMemo(() => {
+    const cy = getYear(now);
+    return Array.from({ length: 6 }, (_, i) => cy - 5 + i);
+  }, [now]);
+
+  const monthsAllI = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) => ({
+        value: i + 1,
+        label: format(new Date(2000, i, 1), "MMM"),
+      })),
+    [],
+  );
+  const monthsToShowI = useMemo(() => {
+    const start = (quarterI - 1) * 3 + 1;
+    const end = start + 2;
+    return monthsAllI.filter((m) => m.value >= start && m.value <= end);
+  }, [monthsAllI, quarterI]);
+  const effectiveMonthI = useMemo(() => {
+    const start = (quarterI - 1) * 3 + 1;
+    const end = start + 2;
+    return clamp(monthI, start, end);
+  }, [monthI, quarterI]);
+
+  // Seed invoices deterministically
+  function rand(seed: number) {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+  const productNames = [
+    "Spanish Latte",
+    "Americano",
+    "Iced Caramel",
+    "Croissant",
+    "Cappuccino",
+    "Mocha",
+  ];
+  const customers = [
+    { name: "Ali Hassan", phone: "+201234567890", gender: "Male" as const },
+    { name: "Sara Ahmed", phone: "+201112223334", gender: "Female" as const },
+    { name: "Omar Noor", phone: "+201009998877", gender: "Male" as const },
+    { name: "Mona Adel", phone: "+201555667788", gender: "Female" as const },
+  ];
+
+  const invoices: Invoice[] = useMemo(() => {
+    const arr: Invoice[] = [];
+    yearsI.forEach((yy, yi) => {
+      for (let m = 0; m < 12; m++) {
+        const start = startOfMonth(new Date(yy, m, 1));
+        const end = endOfMonth(start);
+        const days = eachDayOfInterval({ start, end });
+        days.forEach((d, di) => {
+          const count = 1 + Math.floor(rand(yy * 10000 + (m + 1) * 100 + di) * 3); // 1..3 invoices/day
+          for (let k = 0; k < count; k++) {
+            const cust = customers[(yi + m + di + k) % customers.length];
+            const itemsCount = 1 + Math.floor(rand(di * 50 + k * 7) * 3); // 1..3 items
+            const items: InvoiceItem[] = Array.from({ length: itemsCount }, (_, j) => {
+              const name = productNames[(m + di + j) % productNames.length];
+              const base = 35 + ((m + di + j) % 5) * 7;
+              const price = Math.round((base + rand(yy + di + j) * 10) * 100) / 100;
+              return { name, price };
+            });
+            const subtotal = Math.round(items.reduce((a, b) => a + b.price, 0) * 100) / 100;
+            const paid = Math.round((subtotal - Math.floor(rand(di + k) * 3)) * 100) / 100; // sometimes leave small balance
+            const id = `${yy}${String(m + 1).padStart(2, "0")}${String(di + 1).padStart(2, "0")}-${k}${String(Math.floor(rand(k + di + m) * 9999)).padStart(4, "0")}`;
+            const hh = String(Math.floor(rand(yy + di + k) * 12) + 8).padStart(2, "0");
+            const mm = String(Math.floor(rand(yi + m + di + k) * 60)).padStart(2, "0");
+            arr.push({
+              id,
+              date: format(d, "yyyy-MM-dd"),
+              time: `${hh}:${mm}`,
+              customerName: cust.name,
+              phone: cust.phone,
+              gender: cust.gender,
+              items,
+              subtotal,
+              paid: Math.min(subtotal, paid),
+            });
+          }
+        });
+      }
+    });
+    return arr;
+  }, [yearsI]);
+
+  function rangeI(): { start: Date; end: Date } {
+    if (scaleI === "yearly") {
+      const s = startOfYear(new Date(yearI, 0, 1));
+      return { start: s, end: endOfYear(s) };
+    }
+    if (scaleI === "quarterly") {
+      const m0 = (quarterI - 1) * 3;
+      const s = startOfMonth(new Date(yearI, m0, 1));
+      return { start: s, end: endOfMonth(new Date(yearI, m0 + 2, 1)) };
+    }
+    if (scaleI === "monthly") {
+      const s = startOfMonth(new Date(yearI, effectiveMonthI - 1, 1));
+      return { start: s, end: endOfMonth(s) };
+    }
+    if (scaleI === "weekly" || scaleI === "daily") {
+      if (weekI === 0) {
+        const s = startOfMonth(new Date(yearI, effectiveMonthI - 1, 1));
+        return { start: s, end: endOfMonth(s) };
+      }
+      const base = startOfWeek(
+        startOfMonth(new Date(yearI, effectiveMonthI - 1, 1)),
+        { weekStartsOn: 1 },
+      );
+      const s = addDays(base, (weekI - 1) * 7);
+      return { start: s, end: addDays(s, 6) };
+    }
+    return { start: now, end: now };
+  }
+
+  const iRange = useMemo(() => rangeI(), [scaleI, yearI, quarterI, effectiveMonthI, weekI]);
+  const filteredInvoices = useMemo(() => {
+    const s = iRange.start.getTime();
+    const e = addDays(iRange.end, 1).getTime();
+    return invoices.filter((inv) => {
+      const t = new Date(inv.date).getTime();
+      return t >= s && t < e;
+    });
+  }, [invoices, iRange]);
+
   return (
     <DashboardLayout title="Finance">
+      {/* Invoices table */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Invoices</CardTitle>
+          <CardDescription>Filter by period to view detailed invoice records.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Controls */}
+          <div className="flex flex-wrap items-end gap-2 min-w-0">
+            <Tabs value={scaleI} onValueChange={(v) => setScaleI(v as Scale)}>
+              <TabsList>
+                <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
+                <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                <TabsTrigger value="daily">Daily</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Select value={String(yearI)} onValueChange={(v) => setYearI(Number(v))}>
+              <SelectTrigger className="w-[110px]"><SelectValue placeholder="Year" /></SelectTrigger>
+              <SelectContent>
+                {yearsI.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={String(quarterI)} onValueChange={(v) => setQuarterI(Number(v) as any)}>
+              <SelectTrigger className="w-[100px]"><SelectValue placeholder="Quarter" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Q1</SelectItem>
+                <SelectItem value="2">Q2</SelectItem>
+                <SelectItem value="3">Q3</SelectItem>
+                <SelectItem value="4">Q4</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={String(effectiveMonthI)} onValueChange={(v) => setMonthI(Number(v))}>
+              <SelectTrigger className="w-[120px]"><SelectValue placeholder="Month" /></SelectTrigger>
+              <SelectContent>
+                {monthsToShowI.map((m) => (
+                  <SelectItem key={m.value} value={String(m.value)}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={String(weekI)} onValueChange={(v) => setWeekI(Number(v))}>
+              <SelectTrigger className="w-[100px]"><SelectValue placeholder="Week" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">All</SelectItem>
+                {[1, 2, 3, 4].map((w) => (
+                  <SelectItem key={w} value={String(w)}>{`Wk ${w}`}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="mt-4 max-h-80 overflow-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Invoice ID</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Gender</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>Item Prices</TableHead>
+                  <TableHead>Subtotal</TableHead>
+                  <TableHead>Paid</TableHead>
+                  <TableHead>Balance</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInvoices.map((inv) => {
+                  const balance = Math.max(0, Math.round((inv.subtotal - inv.paid) * 100) / 100);
+                  return (
+                    <TableRow key={inv.id}>
+                      <TableCell>{inv.date}</TableCell>
+                      <TableCell className="font-mono text-xs">{inv.id}</TableCell>
+                      <TableCell>{inv.time}</TableCell>
+                      <TableCell>{inv.customerName}</TableCell>
+                      <TableCell>{inv.phone}</TableCell>
+                      <TableCell>{inv.gender}</TableCell>
+                      <TableCell>
+                        <div className="max-w-[220px] truncate" title={inv.items.map((i)=>i.name).join(", ")}>{inv.items.map((i) => i.name).join(", ")}</div>
+                      </TableCell>
+                      <TableCell>
+                        {inv.items.map((i, idx) => (
+                          <div key={idx}>${i.price.toFixed(2)}</div>
+                        ))}
+                      </TableCell>
+                      <TableCell>${inv.subtotal.toFixed(2)}</TableCell>
+                      <TableCell>${inv.paid.toFixed(2)}</TableCell>
+                      <TableCell className={balance > 0 ? "text-amber-700" : "text-emerald-700"}>${balance.toFixed(2)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6">
         <CostSection
           title="Cost of Goods Sold (COGS)"

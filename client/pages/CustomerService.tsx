@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -105,7 +106,7 @@ export default function CustomerService() {
     (Math.floor(getMonth(now) / 3) + 1) as 1 | 2 | 3 | 4,
   );
   const [month, setMonth] = useState<number>(getMonth(now) + 1); // 1..12
-  const [week, setWeek] = useState<number>(1);
+  const [week, setWeek] = useState<number>(1); // 0 = All weeks
   const [genderFilter, setGenderFilter] = useState<"All" | "Male" | "Female">(
     "All",
   );
@@ -156,6 +157,11 @@ export default function CustomerService() {
       return { start: s, end: endOfMonth(s), label: format(s, "MMM yyyy") };
     }
     if (scale === "weekly") {
+      if (week === 0) {
+        const s = startOfMonth(new Date(year, effectiveMonth - 1, 1));
+        const e = endOfMonth(s);
+        return { start: s, end: e, label: `${format(s, "MMM d")} – ${format(e, "MMM d, yyyy")}` };
+      }
       const base = startOfWeek(
         startOfMonth(new Date(year, effectiveMonth - 1, 1)),
         { weekStartsOn: 1 },
@@ -168,6 +174,10 @@ export default function CustomerService() {
       };
     }
     // daily
+    if (week === 0) {
+      const s = startOfMonth(new Date(year, effectiveMonth - 1, 1));
+      return { start: s, end: s, label: format(s, "MMM yyyy") };
+    }
     const base = startOfWeek(
       startOfMonth(new Date(year, effectiveMonth - 1, 1)),
       { weekStartsOn: 1 },
@@ -294,15 +304,22 @@ export default function CustomerService() {
           (range.end.getTime() - range.start.getTime()) / 86400000 + 1,
         ),
     );
+    const genderBias = genderFilter === "Male" ? 6 : genderFilter === "Female" ? -4 : 1;
     return PRODUCTS.map((p, idx) => {
-      const base = 50 + idx * 12;
+      const base = 40 + idx * 10;
+      const seasonal = (noise(year, effectiveMonth - 1, idx + 3, 29) - 0.5) * 20;
+      const weekly = (noise(year, week + idx, idx + 9, 17) - 0.5) * 18;
+      const ageBias = ageFilter === "All" ? 0 : Math.max(0, AGE_GROUPS.indexOf(ageFilter)) * 1.2;
       const s =
         base +
-        segIntensity * 0.8 +
-        (noise(year, effectiveMonth - 1, week + idx, 7) - 0.5) * 30;
-      return { product: p, Score: Math.round(clamp(s, 10, 200)) };
+        segIntensity * 0.9 +
+        seasonal +
+        weekly +
+        genderBias +
+        ageBias;
+      return { product: p, Score: Math.round(clamp(s, 10, 220)) };
     });
-  }, [newCurrent, range, year, effectiveMonth, week]);
+  }, [newCurrent, range, year, effectiveMonth, week, genderFilter, ageFilter]);
 
   // Satisfaction data by age & gender selector
   const satisfactionData = useMemo(() => {
@@ -373,17 +390,20 @@ export default function CustomerService() {
   const retentionByAge = useMemo(() => {
     return AGE_GROUPS.map((ag, idx) => {
       if (ageFilter !== "All" && ag !== ageFilter)
-        return { group: ag, Retention: 0 };
-      const base =
-        (retentionBaseFor("Male", idx, range.start) +
-          retentionBaseFor("Female", idx, range.start)) /
-        2;
-      const rate = clamp(
-        base * 100 + (noise(year, effectiveMonth - 1, idx + 21, 17) - 0.5) * 8,
+        return { group: ag, Male: 0, Female: 0 };
+      const baseM = retentionBaseFor("Male", idx, range.start);
+      const baseF = retentionBaseFor("Female", idx, range.start);
+      const adjM = clamp(
+        baseM * 100 + (noise(year, effectiveMonth - 1, idx + 21, 17) - 0.5) * 8,
         35,
         95,
       );
-      return { group: ag, Retention: Math.round(rate) };
+      const adjF = clamp(
+        baseF * 100 + (noise(year, effectiveMonth - 1, idx + 31, 19) - 0.5) * 8,
+        35,
+        95,
+      );
+      return { group: ag, Male: Math.round(adjM), Female: Math.round(adjF) };
     });
   }, [range, year, effectiveMonth, ageFilter]);
 
@@ -541,6 +561,8 @@ export default function CustomerService() {
     return { x, y };
   }
 
+  const [selectedFeedback, setSelectedFeedback] = useState<any | null>(null);
+
   return (
     <DashboardLayout title="Customer Satisfaction Dashboard">
       {/* Global filters */}
@@ -607,7 +629,8 @@ export default function CustomerService() {
               <SelectValue placeholder="Week" />
             </SelectTrigger>
             <SelectContent>
-              {[1, 2, 3, 4, 5].map((w) => (
+              <SelectItem value="0">All</SelectItem>
+              {[1, 2, 3, 4].map((w) => (
                 <SelectItem key={w} value={String(w)}>{`Wk ${w}`}</SelectItem>
               ))}
             </SelectContent>
@@ -741,27 +764,16 @@ export default function CustomerService() {
         <Card>
           <CardHeader>
             <CardTitle>Product Rank</CardTitle>
-            <CardDescription>Segmented by global filters</CardDescription>
+            <CardDescription>Higher is better · sorted</CardDescription>
           </CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={productRankData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--muted))"
-                />
-                <XAxis
-                  dataKey="product"
-                  stroke="hsl(var(--muted-foreground))"
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
+              <BarChart data={[...productRankData].sort((a,b)=>b.Score-a.Score)} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
+                <YAxis type="category" dataKey="product" stroke="hsl(var(--muted-foreground))" width={120} />
                 <ReTooltip />
-                <Legend />
-                <Bar
-                  dataKey="Score"
-                  fill="hsl(var(--accent))"
-                  radius={[4, 4, 0, 0]}
-                />
+                <Bar dataKey="Score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -796,7 +808,7 @@ export default function CustomerService() {
                 {genderFilter !== "Male" && (
                   <Bar
                     dataKey="Female"
-                    fill="hsl(var(--secondary))"
+                    fill="hsl(var(--chart-secondary))"
                     radius={[4, 4, 0, 0]}
                   />
                 )}
@@ -820,92 +832,36 @@ export default function CustomerService() {
                 <XAxis dataKey="group" stroke="hsl(var(--muted-foreground))" />
                 <YAxis unit="%" stroke="hsl(var(--muted-foreground))" />
                 <ReTooltip />
-                <Bar
-                  dataKey="Retention"
-                  fill="hsl(var(--muted-foreground))"
-                  radius={[4, 4, 0, 0]}
-                />
+                <Legend />
+                {genderFilter !== "Female" && (
+                  <Bar dataKey="Male" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+                )}
+                {genderFilter !== "Male" && (
+                  <Bar dataKey="Female" fill="hsl(var(--chart-secondary))" radius={[4,4,0,0]} />
+                )}
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Demand map */}
+      {/* Demand by location (bar chart) */}
       <div className="grid gap-4 mt-4">
         <Card>
           <CardHeader>
             <CardTitle>Demand by Location</CardTitle>
-            <CardDescription>
-              Higher bubbles indicate more demand
-            </CardDescription>
+            <CardDescription>Relative demand per city</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="relative w-full" style={{ height: 260 }}>
-              <svg
-                viewBox="0 0 800 400"
-                className="w-full h-full rounded-md border"
-              >
-                <defs>
-                  <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
-                    <stop
-                      offset="0%"
-                      stopColor="hsl(var(--muted))"
-                      stopOpacity="0.25"
-                    />
-                    <stop offset="100%" stopColor="hsl(var(--background))" />
-                  </linearGradient>
-                </defs>
-                <rect x="0" y="0" width="800" height="400" fill="url(#bg)" />
-                {Array.from({ length: 12 }, (_, i) => i).map((i) => (
-                  <line
-                    key={`v${i}`}
-                    x1={(i + 1) * 60}
-                    y1={0}
-                    x2={(i + 1) * 60}
-                    y2={400}
-                    stroke="hsl(var(--muted))"
-                    strokeDasharray="4 4"
-                  />
-                ))}
-                {Array.from({ length: 7 }, (_, i) => i).map((i) => (
-                  <line
-                    key={`h${i}`}
-                    x1={0}
-                    y1={(i + 1) * 50}
-                    x2={800}
-                    y2={(i + 1) * 50}
-                    stroke="hsl(var(--muted))"
-                    strokeDasharray="4 4"
-                  />
-                ))}
-                {demandPoints.map((p) => {
-                  const { x, y } = project(p.lat, p.lon, 800, 400);
-                  const r = 6 + (p.demand / 100) * 18;
-                  return (
-                    <g key={p.city}>
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r={r}
-                        fill="hsl(var(--primary))"
-                        fillOpacity="0.35"
-                        stroke="hsl(var(--primary))"
-                      />
-                      <text
-                        x={x + r + 4}
-                        y={y}
-                        alignmentBaseline="middle"
-                        fontSize="12"
-                        fill="hsl(var(--foreground))"
-                      >
-                        {p.city} ({p.demand})
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-            </div>
+          <CardContent className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={demandPoints}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                <XAxis dataKey="city" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <ReTooltip />
+                <Bar dataKey="demand" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
@@ -972,7 +928,7 @@ export default function CustomerService() {
               </TableHeader>
               <TableBody>
                 {filteredFeedbacks.map((f) => (
-                  <TableRow key={f.id}>
+                  <TableRow key={f.id} className="cursor-pointer" onClick={() => setSelectedFeedback(f)}>
                     <TableCell className="font-medium">{f.name}</TableCell>
                     <TableCell>{f.phone}</TableCell>
                     <TableCell>{f.type}</TableCell>
@@ -1000,6 +956,31 @@ export default function CustomerService() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!selectedFeedback} onOpenChange={() => setSelectedFeedback(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Feedback Details</DialogTitle>
+            <DialogDescription>Full context for the selected row</DialogDescription>
+          </DialogHeader>
+          {selectedFeedback && (
+            <div className="space-y-2 text-sm">
+              <div><span className="text-muted-foreground">Name:</span> {selectedFeedback.name}</div>
+              <div><span className="text-muted-foreground">Phone:</span> {selectedFeedback.phone}</div>
+              <div><span className="text-muted-foreground">Type:</span> {selectedFeedback.type}</div>
+              <div><span className="text-muted-foreground">Created:</span> {format(new Date(selectedFeedback.createdAt), "PPpp")}</div>
+              <div>
+                <div className="text-muted-foreground">Short Description</div>
+                <div>{String(selectedFeedback.description).slice(0, 80)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Long Description</div>
+                <div>{selectedFeedback.description}</div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

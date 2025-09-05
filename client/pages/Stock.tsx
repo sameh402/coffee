@@ -112,8 +112,45 @@ export default function Stock() {
       .filter((r) => r.needed > 0);
   }, [selectedProduct]);
 
+  // Estimate required units for tomorrow and compare against coverage
+  function prng(seed: number) {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+  function predictedTomorrowUnits(p: Product) {
+    const today = new Date();
+    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const base = p.category === "Coffee" ? 120 : p.category === "Cold" ? 80 : 60;
+    const dow = today.getDay();
+    const dowFactor = [0.9, 0.95, 1.0, 1.05, 1.1, 1.25, 1.3][dow];
+    const noise = 0.8 + prng(seed + p.id.length * 7) * 0.6; // 0.8..1.4
+    return Math.max(0, Math.round(base * dowFactor * noise));
+  }
+  const readinessCards = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    required: predictedTomorrowUnits(p),
+  }));
+
   return (
     <DashboardLayout title="Stock Management">
+      {/* Tomorrow readiness cards (Required only) */}
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {readinessCards.map((it) => (
+          <Card key={it.id}>
+            <CardHeader>
+              <CardTitle className="text-base">{it.name}</CardTitle>
+              <CardDescription>Required for tomorrow</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-end justify-between">
+              <div className="text-2xl font-semibold text-primary">{it.required}</div>
+              <Badge variant="secondary">{it.category}</Badge>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Product cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((p) => {

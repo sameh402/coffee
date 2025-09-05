@@ -191,6 +191,25 @@ export default function Overview() {
       const y = typeof year === "number" ? year : getYear(now);
       const mStart = startOfMonth(new Date(y, effectiveMonth - 1, 1));
       const base = startOfWeek(mStart, { weekStartsOn: 1 });
+      if (week === 0) {
+        const monthDays = eachDayOfInterval({ start: mStart, end: endOfMonth(mStart) });
+        const arr = [1, 2, 3, 4].map((w) => ({ label: `Wk ${w}`, revenue: 0, profit: 0 }));
+        const counts = [0, 0, 0, 0];
+        monthDays.forEach((d) => {
+          const diffDays = Math.floor((d.getTime() - base.getTime()) / 86400000);
+          const wk = Math.floor(diffDays / 7) + 1;
+          const idx = Math.min(Math.max(wk, 1), 4) - 1;
+          const m = metricsFor(new Date(getYear(d), getMonth(d), getDate(d), 12));
+          arr[idx].revenue += m.revenue;
+          arr[idx].profit += m.profit;
+          counts[idx] += 1;
+        });
+        return arr.map((b, i) => ({
+          label: b.label,
+          revenue: b.revenue,
+          profit: counts[i] ? Math.round((b.profit / counts[i]) * 10) / 10 : 0,
+        }));
+      }
       const start = addDays(base, (week - 1) * 7);
       const days = eachDayOfInterval({ start, end: addDays(start, 6) });
       return days.map((d) => ({
@@ -201,7 +220,8 @@ export default function Overview() {
 
     // hourly with interval
     const y = typeof year === "number" ? year : getYear(now);
-    const date = new Date(y, effectiveMonth - 1, 1 + (week - 1) * 7);
+    const wk = week === 0 ? 1 : week;
+    const date = new Date(y, effectiveMonth - 1, 1 + (wk - 1) * 7);
     const hours = eachHourOfInterval({
       start: date,
       end: addDays(date, 1),
@@ -348,7 +368,8 @@ export default function Overview() {
             <SelectValue placeholder="Week" />
           </SelectTrigger>
           <SelectContent>
-            {[1, 2, 3, 4, 5].map((w) => (
+            <SelectItem value="0">All</SelectItem>
+            {[1, 2, 3, 4].map((w) => (
               <SelectItem key={w} value={String(w)}>{`Wk ${w}`}</SelectItem>
             ))}
           </SelectContent>
@@ -464,7 +485,7 @@ export default function Overview() {
                 <Line
                   type="monotone"
                   dataKey="profit"
-                  stroke="hsl(var(--accent))"
+                  stroke="hsl(var(--coffee))"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}

@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { ReactNode, useEffect } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +27,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 
 function Brand() {
@@ -35,7 +43,7 @@ function Brand() {
       <div className="size-8 grid place-items-center rounded-md bg-primary text-primary-foreground">
         <Coffee className="size-4" />
       </div>
-      <div className="leading-tight">
+      <div className="leading-tight group-data-[collapsible=icon]:hidden">
         <div className="font-semibold">BeanBoard</div>
         <div className="text-xs text-muted-foreground">Coffee Admin</div>
       </div>
@@ -79,6 +87,17 @@ export default function DashboardLayout({
   children: ReactNode;
   title?: string;
 }) {
+  const navigate = useNavigate();
+  const loc = useLocation();
+  useEffect(() => {
+    if (loc.pathname !== "/login") {
+      try {
+        const authed = localStorage.getItem("auth") === "1";
+        if (!authed) navigate(`/login?to=${encodeURIComponent(loc.pathname)}`);
+      } catch {}
+    }
+  }, [loc, navigate]);
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
@@ -112,10 +131,26 @@ export default function DashboardLayout({
               </h1>
               <div className="hidden md:flex items-center gap-2 ml-auto">
                 <Input placeholder="Search…" className="w-64" />
-                <Button variant="secondary">New Report</Button>
-                <Avatar className="size-8">
-                  <AvatarFallback>SE</AvatarFallback>
-                </Avatar>
+                <Button variant="secondary" onClick={() => window.print()}>Export PDF</Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Avatar className="size-8 cursor-pointer">
+                      <AvatarFallback>SE</AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => {
+                        try { localStorage.removeItem("auth"); } catch {}
+                        window.location.href = "/login";
+                      }}
+                    >
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>

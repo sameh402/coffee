@@ -269,22 +269,25 @@ const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, state } = useSidebar();
+  const collapsed = state === "collapsed";
 
   return (
     <Button
       ref={ref}
       data-sidebar="trigger"
+      title="Toggle sidebar (Ctrl/Cmd+B)"
+      aria-pressed={collapsed}
       variant="ghost"
       size="icon"
-      className={cn("h-7 w-7", className)}
+      className={cn("h-8 w-8", className)}
       onClick={(event) => {
         onClick?.(event);
         toggleSidebar();
       }}
       {...props}
     >
-      <PanelLeft />
+      <PanelLeft className={cn("transition-transform", collapsed && "-scale-x-100")} />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
