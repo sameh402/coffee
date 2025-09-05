@@ -11,6 +11,7 @@ import Stock from "./pages/Stock";
 import Finance from "./pages/Finance";
 import CustomerService from "./pages/CustomerService";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
