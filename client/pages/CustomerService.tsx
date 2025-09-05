@@ -304,15 +304,22 @@ export default function CustomerService() {
           (range.end.getTime() - range.start.getTime()) / 86400000 + 1,
         ),
     );
+    const genderBias = genderFilter === "Male" ? 6 : genderFilter === "Female" ? -4 : 1;
     return PRODUCTS.map((p, idx) => {
-      const base = 50 + idx * 12;
+      const base = 40 + idx * 10;
+      const seasonal = (noise(year, effectiveMonth - 1, idx + 3, 29) - 0.5) * 20;
+      const weekly = (noise(year, week + idx, idx + 9, 17) - 0.5) * 18;
+      const ageBias = ageFilter === "All" ? 0 : Math.max(0, AGE_GROUPS.indexOf(ageFilter)) * 1.2;
       const s =
         base +
-        segIntensity * 0.8 +
-        (noise(year, effectiveMonth - 1, week + idx, 7) - 0.5) * 30;
-      return { product: p, Score: Math.round(clamp(s, 10, 200)) };
+        segIntensity * 0.9 +
+        seasonal +
+        weekly +
+        genderBias +
+        ageBias;
+      return { product: p, Score: Math.round(clamp(s, 10, 220)) };
     });
-  }, [newCurrent, range, year, effectiveMonth, week]);
+  }, [newCurrent, range, year, effectiveMonth, week, genderFilter, ageFilter]);
 
   // Satisfaction data by age & gender selector
   const satisfactionData = useMemo(() => {
