@@ -199,10 +199,6 @@ export default function DashboardLayout({
                         </select>
                       </div>
                       <div className="grid gap-2">
-                        <Label>Base Price</Label>
-                        <Input type="number" min="0" step="0.01" value={basePrice} onChange={(e)=>setBasePrice(e.target.value)} />
-                      </div>
-                      <div className="grid gap-2">
                         <Label>Price Categories</Label>
                         <div className="rounded-md border overflow-hidden">
                           <table className="w-full text-sm">
