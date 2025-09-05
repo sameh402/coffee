@@ -383,17 +383,20 @@ export default function CustomerService() {
   const retentionByAge = useMemo(() => {
     return AGE_GROUPS.map((ag, idx) => {
       if (ageFilter !== "All" && ag !== ageFilter)
-        return { group: ag, Retention: 0 };
-      const base =
-        (retentionBaseFor("Male", idx, range.start) +
-          retentionBaseFor("Female", idx, range.start)) /
-        2;
-      const rate = clamp(
-        base * 100 + (noise(year, effectiveMonth - 1, idx + 21, 17) - 0.5) * 8,
+        return { group: ag, Male: 0, Female: 0 };
+      const baseM = retentionBaseFor("Male", idx, range.start);
+      const baseF = retentionBaseFor("Female", idx, range.start);
+      const adjM = clamp(
+        baseM * 100 + (noise(year, effectiveMonth - 1, idx + 21, 17) - 0.5) * 8,
         35,
         95,
       );
-      return { group: ag, Retention: Math.round(rate) };
+      const adjF = clamp(
+        baseF * 100 + (noise(year, effectiveMonth - 1, idx + 31, 19) - 0.5) * 8,
+        35,
+        95,
+      );
+      return { group: ag, Male: Math.round(adjM), Female: Math.round(adjF) };
     });
   }, [range, year, effectiveMonth, ageFilter]);
 
@@ -754,26 +757,16 @@ export default function CustomerService() {
         <Card>
           <CardHeader>
             <CardTitle>Product Rank</CardTitle>
-            <CardDescription>Segmented by global filters</CardDescription>
+            <CardDescription>Higher is better · sorted</CardDescription>
           </CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={productRankData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--muted))"
-                />
-                <XAxis
-                  dataKey="product"
-                  stroke="hsl(var(--muted-foreground))"
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
+              <BarChart data={[...productRankData].sort((a,b)=>b.Score-a.Score)} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
+                <YAxis type="category" dataKey="product" stroke="hsl(var(--muted-foreground))" width={120} />
                 <ReTooltip />
-                <Bar
-                  dataKey="Score"
-                  fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
-                />
+                <Bar dataKey="Score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -832,11 +825,13 @@ export default function CustomerService() {
                 <XAxis dataKey="group" stroke="hsl(var(--muted-foreground))" />
                 <YAxis unit="%" stroke="hsl(var(--muted-foreground))" />
                 <ReTooltip />
-                <Bar
-                  dataKey="Retention"
-                  fill="hsl(var(--muted-foreground))"
-                  radius={[4, 4, 0, 0]}
-                />
+                <Legend />
+                {genderFilter !== "Female" && (
+                  <Bar dataKey="Male" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+                )}
+                {genderFilter !== "Male" && (
+                  <Bar dataKey="Female" fill="hsl(var(--secondary))" radius={[4,4,0,0]} />
+                )}
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
