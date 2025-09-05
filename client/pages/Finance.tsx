@@ -208,6 +208,10 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
       return { start: s, end: endOfMonth(s) };
     }
     if (scale === "weekly" || scale === "daily") {
+      if (week === 0) {
+        const s = startOfMonth(new Date(year, effectiveMonth - 1, 1));
+        return { start: s, end: endOfMonth(s) };
+      }
       const base = startOfWeek(
         startOfMonth(new Date(year, effectiveMonth - 1, 1)),
         { weekStartsOn: 1 },
