@@ -43,47 +43,14 @@ const raws: Raw[] = [
 ];
 
 const products: Product[] = [
-  {
-    id: "spanish_latte",
-    name: "Spanish Latte",
-    category: "Coffee",
-    recipe: [
-      { rawId: "beans", amount: 18 },
-      { rawId: "milk", amount: 220 },
-      { rawId: "sugar", amount: 8 },
-      { rawId: "cup", amount: 1 },
-    ],
-  },
-  {
-    id: "americano",
-    name: "Americano",
-    category: "Coffee",
-    recipe: [
-      { rawId: "beans", amount: 15 },
-      { rawId: "cup", amount: 1 },
-    ],
-  },
-  {
-    id: "iced_caramel",
-    name: "Iced Caramel",
-    category: "Cold",
-    recipe: [
-      { rawId: "beans", amount: 16 },
-      { rawId: "milk", amount: 120 },
-      { rawId: "syrup", amount: 25 },
-      { rawId: "ice", amount: 180 },
-      { rawId: "cup", amount: 1 },
-    ],
-  },
-  {
-    id: "croissant",
-    name: "Croissant",
-    category: "Bakery",
-    recipe: [
-      { rawId: "sugar", amount: 12 },
-      { rawId: "cup", amount: 0 },
-    ],
-  },
+  { id: "ground_coffee", name: "Ground Coffee", category: "Coffee", recipe: [ { rawId: "beans", amount: 200 }, { rawId: "cup", amount: 0 } ] },
+  { id: "espresso", name: "Espresso", category: "Coffee", recipe: [ { rawId: "beans", amount: 15 }, { rawId: "cup", amount: 1 } ] },
+  { id: "moka", name: "Moka", category: "Coffee", recipe: [ { rawId: "beans", amount: 16 }, { rawId: "cup", amount: 1 } ] },
+  { id: "turkish_coffee", name: "Turkish Coffee", category: "Coffee", recipe: [ { rawId: "beans", amount: 18 }, { rawId: "sugar", amount: 6 }, { rawId: "cup", amount: 1 } ] },
+  { id: "arabic_coffee", name: "Arabic Coffee", category: "Coffee", recipe: [ { rawId: "beans", amount: 20 }, { rawId: "sugar", amount: 4 }, { rawId: "cup", amount: 1 } ] },
+  { id: "spanish_latte", name: "Spanish Latte", category: "Coffee", recipe: [ { rawId: "beans", amount: 18 }, { rawId: "milk", amount: 220 }, { rawId: "sugar", amount: 8 }, { rawId: "cup", amount: 1 } ] },
+  { id: "hazelnut_coffee", name: "Hazelnut Coffee", category: "Coffee", recipe: [ { rawId: "beans", amount: 16 }, { rawId: "syrup", amount: 20 }, { rawId: "cup", amount: 1 } ] },
+  { id: "karak_tea", name: "Karak Tea", category: "Cold", recipe: [ { rawId: "milk", amount: 180 }, { rawId: "sugar", amount: 6 }, { rawId: "cup", amount: 1 } ] },
 ];
 
 function coverageForProduct(p: Product, stock: Raw[]) {
