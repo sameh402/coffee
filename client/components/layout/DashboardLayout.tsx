@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -36,6 +36,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 
 function Brand() {
   return (
@@ -97,6 +100,33 @@ export default function DashboardLayout({
       } catch {}
     }
   }, [loc, navigate]);
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [pName, setPName] = useState("");
+  const [pDesc, setPDesc] = useState("");
+  const [pCat, setPCat] = useState<"coffee bean" | "coffee" | "drink">("drink");
+  const [basePrice, setBasePrice] = useState("");
+  const variantLabels = pCat === "drink" ? ["Small", "Medium", "Large"] : ["250g", "500g", "1000g"];
+  const [variantPrices, setVariantPrices] = useState<Record<string, string>>({ Small: "", Medium: "", Large: "" });
+  const [images, setImages] = useState<string[]>([]);
+
+  function onPickImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []).slice(0, 3);
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setImages(urls);
+  }
+  function onChangeCategory(val: "coffee bean" | "coffee" | "drink") {
+    setPCat(val);
+    const labels = val === "drink" ? ["Small", "Medium", "Large"] : ["250g", "500g", "1000g"];
+    const next: Record<string, string> = {} as any;
+    labels.forEach((l) => (next[l] = ""));
+    setVariantPrices(next);
+  }
+  function onSubmitProduct(e: React.FormEvent) {
+    e.preventDefault();
+    setAddOpen(false);
+    alert("Product submitted");
+  }
 
   return (
     <SidebarProvider>
