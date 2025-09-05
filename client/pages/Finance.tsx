@@ -273,6 +273,21 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
       return arr;
     }
     if (scale === "weekly") {
+      if (week === 0) {
+        const base = startOfWeek(
+          startOfMonth(new Date(year, effectiveMonth - 1, 1)),
+          { weekStartsOn: 1 },
+        );
+        const arr = [1, 2, 3, 4].map((w) => ({ label: `Wk ${w}`, total: 0 }));
+        rangedEntries.forEach((en) => {
+          const d = new Date(en.date);
+          const diffDays = Math.floor((d.getTime() - base.getTime()) / 86400000);
+          const wk = Math.floor(diffDays / 7) + 1;
+          const idx = Math.min(Math.max(wk, 1), 4) - 1;
+          arr[idx].total += en.amount;
+        });
+        return arr;
+      }
       const days = eachDayOfInterval({ start: range.start, end: range.end });
       const arr = days.map((d) => ({ label: format(d, "EEE"), total: 0 }));
       rangedEntries.forEach((en) => {
