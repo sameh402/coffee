@@ -402,7 +402,8 @@ function CostSection({ title, storageKey, description }: CostSectionProps) {
                 <SelectValue placeholder="Week" />
               </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4, 5].map((w) => (
+                <SelectItem value="0">All</SelectItem>
+                {[1, 2, 3, 4].map((w) => (
                   <SelectItem key={w} value={String(w)}>{`Wk ${w}`}</SelectItem>
                 ))}
               </SelectContent>
