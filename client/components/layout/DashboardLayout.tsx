@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { ReactNode, useEffect } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -79,6 +79,17 @@ export default function DashboardLayout({
   children: ReactNode;
   title?: string;
 }) {
+  const navigate = useNavigate();
+  const loc = useLocation();
+  useEffect(() => {
+    if (loc.pathname !== "/login") {
+      try {
+        const authed = localStorage.getItem("auth") === "1";
+        if (!authed) navigate(`/login?to=${encodeURIComponent(loc.pathname)}`);
+      } catch {}
+    }
+  }, [loc, navigate]);
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
