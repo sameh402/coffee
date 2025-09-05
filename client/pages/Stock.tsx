@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useMemo, useState } from "react";
+import AddProductButton from "@/components/stock/AddProductButton";
 
 // Demo stock model
 type Raw = { id: string; name: string; unit: string; qty: number };
