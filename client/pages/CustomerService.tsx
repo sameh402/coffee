@@ -69,12 +69,14 @@ const AGE_GROUPS = [
   "40+",
 ] as const;
 const PRODUCTS = [
-  "Spanish Latte",
-  "Americano",
-  "Iced Caramel",
-  "Croissant",
+  "Ground Coffee",
   "Espresso",
-  "Mocha",
+  "Moka",
+  "Turkish Coffee",
+  "Arabic Coffee",
+  "Spanish Latte",
+  "Hazelnut Coffee",
+  "Karak Tea",
 ] as const;
 
 type AgeGroup = (typeof AGE_GROUPS)[number];
