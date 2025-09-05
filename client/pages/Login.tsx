@@ -11,6 +11,12 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const to = params.get("to") ?? "/overview";
 
+  if (typeof window !== "undefined") {
+    try {
+      if (localStorage.getItem("auth") === "1") navigate(to);
+    } catch {}
+  }
+
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     try { localStorage.setItem("auth", "1"); } catch {}
@@ -32,7 +38,7 @@ export default function Login() {
             </div>
             <div>
               <div className="text-xs text-muted-foreground mb-1">Password</div>
-              <Input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} required placeholder="••���•••••" />
+              <Input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} required placeholder="••••••••" />
             </div>
             <Button type="submit" className="mt-2 w-full">Login</Button>
           </form>
