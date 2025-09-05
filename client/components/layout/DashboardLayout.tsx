@@ -35,7 +35,7 @@ function Brand() {
       <div className="size-8 grid place-items-center rounded-md bg-primary text-primary-foreground">
         <Coffee className="size-4" />
       </div>
-      <div className="leading-tight">
+      <div className="leading-tight group-data-[collapsible=icon]:hidden">
         <div className="font-semibold">BeanBoard</div>
         <div className="text-xs text-muted-foreground">Coffee Admin</div>
       </div>
