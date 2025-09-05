@@ -19,16 +19,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useMemo, useState } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip as ReTooltip,
-  Legend,
-} from "recharts";
 
 // Demo stock model
 type Raw = { id: string; name: string; unit: string; qty: number };
@@ -136,35 +126,29 @@ export default function Stock() {
     const noise = 0.8 + prng(seed + p.id.length * 7) * 0.6; // 0.8..1.4
     return Math.max(0, Math.round(base * dowFactor * noise));
   }
-  const readinessData = products.map((p) => ({
-    product: p.name,
-    Have: coverageForProduct(p, raws),
-    Required: predictedTomorrowUnits(p),
+  const readinessCards = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    required: predictedTomorrowUnits(p),
   }));
 
   return (
     <DashboardLayout title="Stock Management">
-      {/* Tomorrow readiness chart */}
-      <div className="mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Tomorrow Readiness</CardTitle>
-            <CardDescription>Coverage vs required units per product</CardDescription>
-          </CardHeader>
-          <CardContent className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={readinessData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
-                <XAxis dataKey="product" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <ReTooltip />
-                <Legend />
-                <Bar dataKey="Have" fill="hsl(var(--secondary))" radius={[4,4,0,0]} />
-                <Bar dataKey="Required" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {/* Tomorrow readiness cards (Required only) */}
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {readinessCards.map((it) => (
+          <Card key={it.id}>
+            <CardHeader>
+              <CardTitle className="text-base">{it.name}</CardTitle>
+              <CardDescription>Required for tomorrow</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-end justify-between">
+              <div className="text-2xl font-semibold text-primary">{it.required}</div>
+              <Badge variant="secondary">{it.category}</Badge>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Product cards */}
