@@ -112,7 +112,7 @@ export default function DashboardLayout({
               </h1>
               <div className="hidden md:flex items-center gap-2 ml-auto">
                 <Input placeholder="Search…" className="w-64" />
-                <Button variant="secondary">New Report</Button>
+                <Button variant="secondary" onClick={() => window.print()}>Export PDF</Button>
                 <Avatar className="size-8">
                   <AvatarFallback>SE</AvatarFallback>
                 </Avatar>
