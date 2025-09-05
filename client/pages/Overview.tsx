@@ -485,7 +485,7 @@ export default function Overview() {
                 <Line
                   type="monotone"
                   dataKey="profit"
-                  stroke="hsl(var(--accent))"
+                  stroke="hsl(var(--coffee))"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}
