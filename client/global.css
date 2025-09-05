@@ -57,6 +57,10 @@
     --sidebar-border: 28 24% 85%;
 
     --sidebar-ring: 25 28% 35%;
+
+    /* Chart palette */
+    --chart-primary: var(--primary);
+    --chart-secondary: 220 70% 45%;
   }
 
   .dark {
@@ -96,6 +100,10 @@
     --sidebar-accent-foreground: 30 30% 92%;
     --sidebar-border: 24 16% 22%;
     --sidebar-ring: 30 30% 70%;
+
+    /* Chart palette (dark) */
+    --chart-primary: var(--primary);
+    --chart-secondary: 220 75% 60%;
   }
 }
 
