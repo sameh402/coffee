@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,11 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const to = params.get("to") ?? "/overview";
 
-  if (typeof window !== "undefined") {
+  useEffect(() => {
     try {
-      if (localStorage.getItem("auth") === "1") navigate(to);
+      if (localStorage.getItem("auth") === "1") navigate(to, { replace: true });
     } catch {}
-  }
+  }, [navigate, to]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
