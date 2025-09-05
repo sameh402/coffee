@@ -105,7 +105,6 @@ export default function DashboardLayout({
   const [pName, setPName] = useState("");
   const [pDesc, setPDesc] = useState("");
   const [pCat, setPCat] = useState<"coffee bean" | "coffee" | "drink">("drink");
-  const [basePrice, setBasePrice] = useState("");
   const variantLabels = pCat === "drink" ? ["Small", "Medium", "Large"] : ["250g", "500g", "1000g"];
   const [variantPrices, setVariantPrices] = useState<Record<string, string>>({ Small: "", Medium: "", Large: "" });
   const [images, setImages] = useState<string[]>([]);
