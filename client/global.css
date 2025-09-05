@@ -61,6 +61,8 @@
     /* Chart palette */
     --chart-primary: var(--primary);
     --chart-secondary: 220 70% 45%;
+    /* Coffee tone */
+    --coffee: 25 35% 32%;
   }
 
   .dark {
