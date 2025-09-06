@@ -35,6 +35,8 @@ import { toast } from "@/hooks/use-toast";
 const productSchema = z.object({
   name: z.string().min(2, "Enter a product name"),
   category: z.string().min(1, "Choose a category"),
+  unit: z.string().optional().or(z.literal("")),
+  size: z.string().optional().or(z.literal("")),
   price: z.coerce.number().min(0, "Price must be >= 0"),
   sku: z.string().min(1, "SKU is required"),
   stock: z.coerce.number().int().min(0, "Stock must be >= 0"),
@@ -58,6 +60,8 @@ function uid() {
 }
 
 const CATEGORIES = ["Coffee", "Bakery", "Cold", "Merch"] as const;
+const UNITS = ["g", "ml", "pcs"] as const;
+const WEIGHT_SIZES = [250, 500, 750, 1000] as const;
 
 export default function Store() {
   const [items, setItems] = useState<Product[]>(() => {
@@ -82,6 +86,8 @@ export default function Store() {
     defaultValues: {
       name: "",
       category: "",
+      unit: "g",
+      size: "",
       price: 0,
       sku: "",
       stock: 0,
@@ -99,7 +105,7 @@ export default function Store() {
     };
     setItems((prev) => [...prev, product]);
     toast({ title: "Product added", description: `${values.name} has been added to your catalog.` });
-    form.reset({ ...form.getValues(), name: "", price: 0, sku: "", stock: 0, description: "", imageUrl: "" });
+    form.reset({ ...form.getValues(), name: "", category: form.getValues("category"), unit: form.getValues("unit"), size: "", price: 0, sku: "", stock: 0, description: "", imageUrl: "" });
   };
 
   const totalSkus = items.length;
@@ -146,7 +152,7 @@ export default function Store() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-3">
-                  <Label htmlFor="price">Price ($)</Label>
+                  <Label htmlFor="price">Price ($, per size)</Label>
                   <Input id="price" type="number" step="0.01" min={0} {...form.register("price", { valueAsNumber: true })} />
                   {form.formState.errors.price && (
                     <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>
@@ -175,6 +181,41 @@ export default function Store() {
                   {form.formState.errors.imageUrl && (
                     <p className="text-sm text-destructive">{form.formState.errors.imageUrl.message}</p>
                   )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-3">
+                  <Label htmlFor="unit">Unit</Label>
+                  <Select onValueChange={(v) => form.setValue("unit", v)}>
+                    <SelectTrigger id="unit">
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNITS.map((u) => (
+                        <SelectItem key={u} value={u}>{u}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-3">
+                  <Label htmlFor="size">Size/Variant</Label>
+                  <Select onValueChange={(v) => form.setValue("size", v)}>
+                    <SelectTrigger id="size">
+                      <SelectValue placeholder="Select size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {form.watch("category") === "Coffee" ? (
+                        WEIGHT_SIZES.map((w) => (
+                          <SelectItem key={w} value={`${w}${form.watch("unit") || "g"}`}>{w}{form.watch("unit") || "g"}</SelectItem>
+                        ))
+                      ) : (
+                        ["One size", "Small", "Medium", "Large"].map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -222,6 +263,7 @@ export default function Store() {
                   <TableHead>Product</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>SKU</TableHead>
+                  <TableHead>Size</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Added</TableHead>
@@ -241,6 +283,7 @@ export default function Store() {
                     </TableCell>
                     <TableCell>{p.category}</TableCell>
                     <TableCell>{p.sku}</TableCell>
+                    <TableCell>{p.size || "-"}</TableCell>
                     <TableCell>${p.price.toFixed(2)}</TableCell>
                     <TableCell>{p.stock}</TableCell>
                     <TableCell>{new Date(p.addedAt).toLocaleDateString()}</TableCell>
