@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { Trash2 } from "lucide-react";
 
 const productSchema = z.object({
   name: z.string().min(2, "Enter a product name"),
@@ -59,7 +60,7 @@ function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-const CATEGORIES = ["Coffee", "Bakery", "Cold", "Merch"] as const;
+const CATEGORIES = ["Coffee", "Cold"] as const;
 const UNITS = ["g", "ml", "pcs"] as const;
 const WEIGHT_SIZES = [250, 500, 750, 1000] as const;
 
@@ -233,16 +234,6 @@ export default function Store() {
                 >
                   Reset
                 </Button>
-                {items.length > 0 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setItems([])}
-                    className="ml-auto text-destructive"
-                  >
-                    Clear All
-                  </Button>
-                )}
               </div>
             </form>
           </CardContent>
@@ -267,6 +258,7 @@ export default function Store() {
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Added</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -287,6 +279,20 @@ export default function Store() {
                     <TableCell>${p.price.toFixed(2)}</TableCell>
                     <TableCell>{p.stock}</TableCell>
                     <TableCell>{new Date(p.addedAt).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={() => {
+                          setItems((prev) => prev.filter((it) => it.id !== p.id));
+                          toast({ title: "Deleted", description: `${p.name} removed from catalog.` });
+                        }}
+                        aria-label={`Delete ${p.name}`}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
