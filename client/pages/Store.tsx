@@ -293,7 +293,7 @@ export default function Store() {
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Added</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="text-right w-28">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -321,41 +321,43 @@ export default function Store() {
                     <TableCell>${p.price.toFixed(2)}</TableCell>
                     <TableCell>{p.stock}</TableCell>
                     <TableCell>{new Date(p.addedAt).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setEditingId(p.id);
-                          form.reset({
-                            name: p.name,
-                            category: p.category,
-                            unit: p.unit ?? "g",
-                            size: p.size ?? "",
-                            price: p.price,
-                            sku: p.sku,
-                            stock: p.stock,
-                            imageUrl: p.imageUrl ?? "",
-                            description: p.description ?? "",
-                          });
-                        }}
-                        aria-label={`Edit ${p.name}`}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => {
-                          setItems((prev) => prev.filter((it) => it.id !== p.id));
-                          if (editingId === p.id) { setEditingId(null); form.reset(); }
-                          toast({ title: "Deleted", description: `${p.name} removed from catalog.` });
-                        }}
-                        aria-label={`Delete ${p.name}`}
-                      >
-                        <Trash2 />
-                      </Button>
+                    <TableCell className="text-right whitespace-nowrap">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingId(p.id);
+                            form.reset({
+                              name: p.name,
+                              category: p.category,
+                              unit: p.unit ?? "g",
+                              size: p.size ?? "",
+                              price: p.price,
+                              sku: p.sku,
+                              stock: p.stock,
+                              imageUrl: p.imageUrl ?? "",
+                              description: p.description ?? "",
+                            });
+                          }}
+                          aria-label={`Edit ${p.name}`}
+                        >
+                          <Pencil />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive"
+                          onClick={() => {
+                            setItems((prev) => prev.filter((it) => it.id !== p.id));
+                            if (editingId === p.id) { setEditingId(null); form.reset(); }
+                            toast({ title: "Deleted", description: `${p.name} removed from catalog.` });
+                          }}
+                          aria-label={`Delete ${p.name}`}
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
