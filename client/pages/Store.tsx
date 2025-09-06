@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Trash2, Image as ImageIcon } from "lucide-react";
+import { Trash2, Image as ImageIcon, Pencil } from "lucide-react";
 
 const productSchema = z.object({
   name: z.string().min(2, "Enter a product name"),
@@ -71,6 +71,7 @@ export default function Store() {
       return [];
     }
   });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -94,6 +95,19 @@ export default function Store() {
   });
 
   const onSubmit = (values: ProductInput) => {
+    if (editingId) {
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === editingId
+            ? { ...it, ...values, imageUrl: (values.imageUrl ?? "").trim() }
+            : it,
+        ),
+      );
+      toast({ title: "Product updated", description: `${values.name} changes saved.` });
+      setEditingId(null);
+      form.reset({ ...form.getValues(), name: "", size: "", price: 0, sku: "", stock: 0, description: "", imageUrl: "" });
+      return;
+    }
     const product: Product = {
       ...values,
       imageUrl: (values.imageUrl ?? "").trim(),
@@ -132,7 +146,7 @@ export default function Store() {
 
               <div className="grid gap-3">
                 <Label htmlFor="category">Category</Label>
-                <Select onValueChange={(v) => form.setValue("category", v)}>
+                <Select value={form.watch("category")} onValueChange={(v) => form.setValue("category", v)}>
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -205,7 +219,7 @@ export default function Store() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-3">
                   <Label htmlFor="unit">Unit</Label>
-                  <Select onValueChange={(v) => form.setValue("unit", v)}>
+                  <Select value={form.watch("unit")} onValueChange={(v) => form.setValue("unit", v)}>
                     <SelectTrigger id="unit">
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
@@ -218,7 +232,7 @@ export default function Store() {
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="size">Size/Variant</Label>
-                  <Select onValueChange={(v) => form.setValue("size", v)}>
+                  <Select value={form.watch("size")} onValueChange={(v) => form.setValue("size", v)}>
                     <SelectTrigger id="size">
                       <SelectValue placeholder="Select size" />
                     </SelectTrigger>
@@ -243,7 +257,7 @@ export default function Store() {
               </div>
 
               <div className="flex items-center gap-3">
-                <Button type="submit">Add to Catalog</Button>
+                <Button type="submit">{editingId ? "Save Changes" : "Add to Catalog"}</Button>
                 <Button
                   type="button"
                   variant="secondary"
@@ -251,6 +265,9 @@ export default function Store() {
                 >
                   Reset
                 </Button>
+                {editingId && (
+                  <Button type="button" variant="ghost" onClick={() => { setEditingId(null); form.reset(); }}>Cancel edit</Button>
+                )}
               </div>
             </form>
           </CardContent>
@@ -304,13 +321,35 @@ export default function Store() {
                     <TableCell>${p.price.toFixed(2)}</TableCell>
                     <TableCell>{p.stock}</TableCell>
                     <TableCell>{new Date(p.addedAt).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditingId(p.id);
+                          form.reset({
+                            name: p.name,
+                            category: p.category,
+                            unit: p.unit ?? "g",
+                            size: p.size ?? "",
+                            price: p.price,
+                            sku: p.sku,
+                            stock: p.stock,
+                            imageUrl: p.imageUrl ?? "",
+                            description: p.description ?? "",
+                          });
+                        }}
+                        aria-label={`Edit ${p.name}`}
+                      >
+                        <Pencil />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="text-destructive"
                         onClick={() => {
                           setItems((prev) => prev.filter((it) => it.id !== p.id));
+                          if (editingId === p.id) { setEditingId(null); form.reset(); }
                           toast({ title: "Deleted", description: `${p.name} removed from catalog.` });
                         }}
                         aria-label={`Delete ${p.name}`}
