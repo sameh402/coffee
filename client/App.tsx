@@ -11,6 +11,7 @@ import Finance from "./pages/Finance";
 import CustomerService from "./pages/CustomerService";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import Store from "./pages/Store";
 
 const queryClient = new QueryClient();
 
