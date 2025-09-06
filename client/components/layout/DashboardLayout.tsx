@@ -62,6 +62,7 @@ function NavItems() {
     { to: "/overview", label: "Overview", icon: Home },
     { to: "/stock", label: "Stock", icon: PackageSearch },
     { to: "/finance", label: "Finance", icon: PiggyBank },
+    { to: "/store", label: "Store", icon: ShoppingCart },
     { to: "/customer-service", label: "Customer Service", icon: Headphones },
   ];
 
