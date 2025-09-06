@@ -41,11 +41,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(0, "Price must be >= 0"),
   sku: z.string().min(1, "SKU is required"),
   stock: z.coerce.number().int().min(0, "Stock must be >= 0"),
-  imageUrl: z
-    .string()
-    .url({ message: "Must be a valid URL" })
-    .optional()
-    .or(z.literal("")),
+  imageUrl: z.string().optional().or(z.literal("")),
   description: z.string().max(500).optional().or(z.literal("")),
 });
 
@@ -177,10 +173,31 @@ export default function Store() {
                   )}
                 </div>
                 <div className="grid gap-3">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input id="imageUrl" placeholder="https://..." {...form.register("imageUrl")} />
-                  {form.formState.errors.imageUrl && (
-                    <p className="text-sm text-destructive">{form.formState.errors.imageUrl.message}</p>
+                  <Label htmlFor="image">Image</Label>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 3 * 1024 * 1024) {
+                        toast({ title: "Image too large", description: "Max size is 3MB" });
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const url = String(reader.result ?? "");
+                        form.setValue("imageUrl", url, { shouldDirty: true });
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  {form.watch("imageUrl") && (
+                    <div className="flex items-center gap-3">
+                      <img src={form.watch("imageUrl")!} alt="preview" className="size-12 rounded-md object-cover border" />
+                      <Button type="button" variant="ghost" onClick={() => form.setValue("imageUrl", "")}>Remove</Button>
+                    </div>
                   )}
                 </div>
               </div>
