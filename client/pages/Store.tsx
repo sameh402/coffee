@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
+import { Trash2, Image as ImageIcon } from "lucide-react";
 
 const productSchema = z.object({
   name: z.string().min(2, "Enter a product name"),
@@ -96,7 +96,7 @@ export default function Store() {
   const onSubmit = (values: ProductInput) => {
     const product: Product = {
       ...values,
-      imageUrl: values.imageUrl && values.imageUrl.trim() !== "" ? values.imageUrl : "/placeholder.svg",
+      imageUrl: (values.imageUrl ?? "").trim(),
       id: uid(),
       addedAt: new Date().toISOString(),
     };
@@ -268,6 +268,7 @@ export default function Store() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Img</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>SKU</TableHead>
@@ -281,8 +282,15 @@ export default function Store() {
               <TableBody>
                 {items.map((p) => (
                   <TableRow key={p.id}>
+                    <TableCell>
+                      {p.imageUrl ? (
+                        <ImageIcon className="text-primary" />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell className="flex items-center gap-3">
-                      <img src={p.imageUrl} alt="" className="size-10 rounded-md object-cover border" />
+                      <img src={p.imageUrl || "/placeholder.svg"} alt="" className="size-10 rounded-md object-cover border" />
                       <div>
                         <div className="font-medium leading-tight">{p.name}</div>
                         {p.description && (
